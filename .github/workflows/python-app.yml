@@ -1,0 +1,47 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python application
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    env:
+      # uv pip でシステムにinstallするために必要
+      UV_SYSTEM_PYTHON: 1
+
+    runs-on: ubuntu-latest
+
+    steps:
+    # 必要なpermissionsを教えてくれる
+    - uses: GitHubSecurityLab/actions-permissions/monitor@v1
+      with:
+        config: ${{ vars.PERMISSIONS_CONFIG }}
+
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version-file: '.python-version'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        enable-cache: true
+        cache-dependency-glob: "requirements.txt"
+    - name: Install dependencies
+      run: uv pip install -r requirements.txt
+
+    - name: Lint with ruff
+      run: uv run ruff check --output-format=github .
+    - name: Test with pytest
+      run: |
+        pytest
