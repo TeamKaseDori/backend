@@ -5,7 +5,7 @@ class FakeRedis:
     def __init__(self) -> None:
         self.store: dict[str, str] = {}
 
-    def set(self, key: str, value: str) -> None:
+    def set(self, key: str, value: str, *args, **kargs) -> None:
         self.store[key] = value
 
     def get(self, key: str) -> str | None:
