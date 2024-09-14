@@ -1,4 +1,5 @@
 from redis import Redis
+from datetime import timedelta
 
 matched_pair_redis: Redis = Redis(
     host="localhost", port=6379, db=0, decode_responses=True
@@ -23,7 +24,7 @@ class PlayingData:
     def set(self, user_id: str, longitude: float, latitude: float) -> None:
         key = user_id
         value = f"{longitude}{self.D}{latitude}"
-        self.r.set(key, value)
+        self.r.set(key, value, ex=timedelta(minutes=1))
 
     def get(self, user_id: str) -> (float, float, bool):
         value: str | None = self.r.get(user_id)
