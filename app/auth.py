@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel
@@ -37,7 +37,9 @@ def get_user_info(
 
 
 @router.get("/register")
-def register() -> dict:
+def register(response: Response) -> dict:
+    response.headers["Access-Control-Allow-Origin"] = "*"
+
     expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     user_id: str = str(uuid.uuid4())
     claimes: dict[str, Any] = {
