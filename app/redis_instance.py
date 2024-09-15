@@ -85,6 +85,10 @@ class FindMatch:
         self.r.zrem(self.KEY, user_id, pair_user_id)
         return True
 
+    # abort 専用
+    def danger_delete(self, user_id) -> None:
+        self.r.zrem(self.KEY, user_id)
+
     def find(self, user_id: str, min_m: float, max_m: float) -> list[str]:
         # user_id が登録されていない可能性がある
         try:
