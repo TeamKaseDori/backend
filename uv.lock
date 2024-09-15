@@ -35,6 +35,7 @@ dependencies = [
     { name = "fastapi", extra = ["all"] },
     { name = "pyjwt" },
     { name = "redis" },
+    { name = "websockets" },
 ]
 
 [package.dev-dependencies]
@@ -48,6 +49,7 @@ requires-dist = [
     { name = "fastapi", extras = ["all"], specifier = ">=0.114.1" },
     { name = "pyjwt", specifier = ">=2.9.0" },
     { name = "redis", specifier = ">=5.0.8" },
+    { name = "websockets", specifier = ">=13.0.1" },
 ]
 
 [package.metadata.requires-dev]
