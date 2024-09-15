@@ -1,10 +1,13 @@
+import os
 from datetime import timedelta
 from typing import Any
 
 from redis import Redis
 from redis.exceptions import ResponseError
 
-HOST = "red-crj4ijij1k6c73fjhnsg"
+HOST = os.getenv("REDIS_HOST")
+if HOST is None:
+    HOST = "localhost"
 
 matched_pair_redis: Redis = Redis(host=HOST, port=6379, db=0, decode_responses=True)
 
