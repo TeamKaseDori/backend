@@ -77,8 +77,12 @@ class DataGateway:
 class MatchService:
     _match_info_id: str = "match_info_id"
 
-    def __init__(self, user_id: str) -> None:
+    def __init__(
+        self, user_id: str, match_radius_m_min: float, match_radius_m_max: float
+    ) -> None:
         self.user_id: str = user_id
+        self._match_radius_m_min: float = match_radius_m_min
+        self._match_radius_m_max: float = match_radius_m_max
 
         self._aborted: bool = False
         self._match_success_by_the_other: bool = False
@@ -136,7 +140,9 @@ class MatchService:
         if self._match_info is None:
             return False
 
-        candidates = find_match.find(self.user_id, 300, 400)
+        candidates = find_match.find(
+            self.user_id, self._match_radius_m_min, self._match_radius_m_max
+        )
         if not candidates:
             return False
 

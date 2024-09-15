@@ -1,7 +1,7 @@
 import asyncio
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, WebSocket
+from fastapi import APIRouter, Depends, WebSocket, Query
 
 from .auth import TokenData, get_user_info
 from .matching_system import DataGateway, MatchService, MatchSuccessNotifier
@@ -12,7 +12,10 @@ router = APIRouter()
 
 @router.websocket("/matching")
 async def matching(
-    websocket: WebSocket, token_data: Annotated[TokenData, Depends(get_user_info)]
+    websocket: WebSocket,
+    token_data: Annotated[TokenData, Depends(get_user_info)],
+    min: Annotated[float, Query(title="matching min radius [m]", lt=100)] = 300,
+    max: Annotated[float, Query(title="matching max radius [m]", lt=300)] = 500,
 ):
     user_id: str = token_data.user_id
 
@@ -21,7 +24,7 @@ async def matching(
     async def on_close() -> None:
         find_match.unsubscribe(user_id)
 
-    match_service: MatchService = MatchService(user_id)
+    match_service: MatchService = MatchService(user_id, min, max)
     match_success_notifier: MatchSuccessNotifier = MatchSuccessNotifier(
         find_match.get_message, on_close
     )
