@@ -1,21 +1,18 @@
 from fastapi import APIRouter, WebSocket, Depends
-from fastapi.security import OAuth2PasswordBearer
+from typing import Annotated
 from .redis_instance import playing_data
 import json
+from app.auth import TokenData, get_user_info
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
-    # 実際の認証ロジックをここに実装します
-    # ここでは仮にトークンがユーザーIDとして扱われると仮定します
-    user_id = token
-    return user_id
-
 
 @router.websocket("/playing")
-async def playing(websocket: WebSocket, user_id: str = Depends(get_current_user)) -> None:
+async def playing(
+    websocket: WebSocket,
+    token_data: Annotated[TokenData, Depends(get_user_info)]
+) -> None:
+    user_id: str = token_data.user_id
+
     await websocket.accept()  # WebSocket接続の受け入れ
 
     while True:
@@ -51,7 +48,7 @@ async def playing(websocket: WebSocket, user_id: str = Depends(get_current_user)
 
         except Exception as e:
             # エラーが発生した場合の処理
-            await websocket.send_text(f"An error occurred: {str(e)}")
+            await websocket.send_text(f"エラーが発生しました: {str(e)}")
             break
 
     # WebSocket接続の終了
