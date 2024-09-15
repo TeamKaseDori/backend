@@ -4,17 +4,15 @@ from typing import Any
 from redis import Redis
 from redis.exceptions import ResponseError
 
-matched_pair_redis: Redis = Redis(
-    host="localhost", port=6379, db=0, decode_responses=True
-)
+HOST = "red-crj4ijij1k6c73fjhnsg"
+
+matched_pair_redis: Redis = Redis(host=HOST, port=6379, db=0, decode_responses=True)
 
 finding_match_redis: Redis = Redis(
-    host="localhost", port=6379, db=1, decode_responses=True, protocol=3
+    host=HOST, port=6379, db=1, decode_responses=True, protocol=3
 )
 
-playing_data_redis: Redis = Redis(
-    host="localhost", port=6379, db=2, decode_responses=True
-)
+playing_data_redis: Redis = Redis(host=HOST, port=6379, db=2, decode_responses=True)
 
 
 class MatchedPair:
