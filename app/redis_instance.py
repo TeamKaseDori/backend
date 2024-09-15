@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Any
 
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -8,7 +9,7 @@ matched_pair_redis: Redis = Redis(
 )
 
 finding_match_redis: Redis = Redis(
-    host="localhost", port=6379, db=1, decode_responses=True
+    host="localhost", port=6379, db=1, decode_responses=True, protocol=3
 )
 
 playing_data_redis: Redis = Redis(
@@ -42,6 +43,7 @@ class FindMatch:
 
     def __init__(self, redis: Redis) -> None:
         self.r = redis
+        self.p = redis.pubsub()
 
     def _perform_lock(self, user_id: str) -> bool:
         return self.r.set(user_id, 1, nx=True, ex=self.EX_LOCK)
@@ -85,6 +87,10 @@ class FindMatch:
         self.r.zrem(self.KEY, user_id, pair_user_id)
         return True
 
+    # abort 専用
+    def danger_delete(self, user_id) -> None:
+        self.r.zrem(self.KEY, user_id)
+
     def find(self, user_id: str, min_m: float, max_m: float) -> list[str]:
         # user_id が登録されていない可能性がある
         try:
@@ -98,6 +104,18 @@ class FindMatch:
             return []
         candidates = list(set(max_range) - set(min_range))
         return candidates
+
+    def publish(self, pair_user_id: str):
+        self.r.publish(pair_user_id, "invite")
+
+    def subscribe(self, user_id: str):
+        self.p.subscribe(user_id)
+
+    def unsubscribe(self, user_id: str):
+        self.p.unsubscribe(user_id)
+
+    def get_message(self) -> dict[str, Any] | None:
+        return self.p.get_message(ignore_subscribe_messages=True)
 
 
 class PlayingData:
