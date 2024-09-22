@@ -15,8 +15,8 @@ router = APIRouter()
 async def matching(
     websocket: WebSocket,
     user_id: Annotated[str, Depends(get_user_id_from_query)],
-    min: Annotated[float, Query(title="matching min radius [m]", lt=100)] = 300,
-    max: Annotated[float, Query(title="matching max radius [m]", lt=300)] = 500,
+    min: Annotated[float, Query(title="matching min radius [m]", gt=100)] = 300,
+    max: Annotated[float, Query(title="matching max radius [m]", gt=300)] = 500,
 ):
     find_match.subscribe(user_id)
 
