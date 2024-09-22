@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from fastapi import WebSocket, status
 
-from .redis_instance import find_match, matched_pair
+from app.redis_instance import find_match, matched_pair
 
 # 1. listen matche
 # 2. start DataGateway.run()

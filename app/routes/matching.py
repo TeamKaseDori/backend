@@ -1,11 +1,12 @@
 import asyncio
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, WebSocket, Query
+from fastapi import APIRouter, Depends, Query, WebSocket
 
-from .auth import TokenData, get_user_info
+from app.dependencies import get_user_id_from_query
+from app.redis_instance import find_match
+
 from .matching_system import DataGateway, MatchService, MatchSuccessNotifier
-from .redis_instance import find_match
 
 router = APIRouter()
 
@@ -13,12 +14,10 @@ router = APIRouter()
 @router.websocket("/matching")
 async def matching(
     websocket: WebSocket,
-    token_data: Annotated[TokenData, Depends(get_user_info)],
+    user_id: Annotated[str, Depends(get_user_id_from_query)],
     min: Annotated[float, Query(title="matching min radius [m]", lt=100)] = 300,
     max: Annotated[float, Query(title="matching max radius [m]", lt=300)] = 500,
 ):
-    user_id: str = token_data.user_id
-
     find_match.subscribe(user_id)
 
     async def on_close() -> None:

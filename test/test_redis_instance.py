@@ -1,4 +1,4 @@
-from .redis_instance import MatchedPair, PlayingData
+from app.redis_instance import MatchedPair, PlayingData
 
 # import math
 # from .redis_instance import FindMatch, find_match, finding_match_redis

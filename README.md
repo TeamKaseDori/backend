@@ -1,5 +1,16 @@
 # SAIマッチング バックエンド
 
+## 実行方法
+
+```shell
+source .venv/bin/activate
+fastapi dev app/main.py
+```
+
+or
+
+`uv run fastapi dev app/main.py`
+
 ## `get /register`
 
 ### リクエスト
