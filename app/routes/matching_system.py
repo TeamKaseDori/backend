@@ -24,7 +24,7 @@ class MatchSuccessNotifier:
         self.match_success_checker = match_success_checker
         self.on_close = on_close
 
-    async def run(self, notify_match_success: Callable[[str], None]) -> None:
+    async def run(self, listener: Callable[[str], None]) -> None:
         while True:
             print("in match success notifier")
             await asyncio.sleep(0.5)
@@ -35,7 +35,7 @@ class MatchSuccessNotifier:
 
             message = self.match_success_checker()
             if message is not None:
-                notify_match_success(message["user_id"])
+                listener(message["user_id"])
                 return
 
     async def close(self):
@@ -75,7 +75,7 @@ class DataGateway:
 
 # マッチングをする
 class MatchService:
-    _match_info_id: str = "match_info_id"
+    _user_data_id: str = "user_data_id"
 
     def __init__(
         self, user_id: str, match_radius_m_min: float, match_radius_m_max: float
@@ -88,8 +88,8 @@ class MatchService:
         self._match_success_by_the_other: bool = False
         self.pair_user_id: str | None = None
 
-        self._match_info: str | None = None
-        self._applied_match_info_id: str | None = None
+        self._user_data: str | None = None
+        self._applied_user_data_id: str | None = None
 
     async def run(
         self,
@@ -106,7 +106,7 @@ class MatchService:
                 await on_abort()
                 return None
 
-            self._apply_match_info()
+            self._apply_user_data()
 
             # listen match
             if self._match_success_by_the_other:
@@ -121,23 +121,23 @@ class MatchService:
                 on_success(self.pair_user_id)
                 return self.pair_user_id
 
-    def _apply_match_info(self) -> None:
-        if self._match_info is None:
+    def _apply_user_data(self) -> None:
+        if self._user_data is None:
             return
-        if self._match_info[self._match_info_id] == self._applied_match_info_id:
+        if self._user_data[self._user_data_id] == self._applied_user_data_id:
             return
 
         # 座標redisに送る
         find_match.add(
-            self.user_id, self._match_info["longitude"], self._match_info["latitude"]
+            self.user_id, self._user_data["longitude"], self._user_data["latitude"]
         )
-        print(f"send data: {self._match_info}")
+        print(f"send data: {self._user_data}")
 
-        self._applied_match_info_id = self._match_info[self._match_info_id]  # type: ignore
+        self._applied_user_data_id = self._user_data[self._user_data_id]  # type: ignore
 
     def _find_match(self) -> bool:
         # find pair user
-        if self._match_info is None:
+        if self._user_data is None:
             return False
 
         candidates = find_match.find(
@@ -172,14 +172,14 @@ class MatchService:
         matched_pair.delete(self.user_id)
         print("abort from match service")
 
-    def notify_match_info(self, data: dict) -> None:
-        self._match_info = data
-        self._match_info[self._match_info_id] = uuid.uuid4()
+    def listen_user_data(self, data: dict) -> None:
+        self._user_data = data
+        self._user_data[self._user_data_id] = uuid.uuid4()
         print(f"notified: {data}")
 
-    def notify_match_success_by_the_other(self, other_user_id: str) -> None:
+    def listen_match_success_by_the_other(self, other_user_id: str) -> None:
         self._match_success_by_the_other = True
         self.pair_user_id = other_user_id
 
-    def notify_abort(self) -> None:
+    def listen_abort(self) -> None:
         self._aborted = True
