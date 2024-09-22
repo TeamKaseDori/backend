@@ -2,7 +2,7 @@ import asyncio
 import random
 import uuid
 from collections.abc import Awaitable, Callable
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import WebSocket, status
 
@@ -54,7 +54,7 @@ class DataGateway:
 
     async def run(
         self,
-        notify_coming_data: Callable[[any], None],
+        notify_coming_data: Callable[[Any], None],
         notify_abort: Callable[[], None],
     ) -> None:
         while True:
@@ -86,10 +86,10 @@ class MatchService:
 
         self._aborted: bool = False
         self._match_success_by_the_other: bool = False
-        self.pair_user_id: Optional[str] = None
+        self.pair_user_id: str | None = None
 
-        self._match_info: Optional[dict[str, Any]] = None
-        self._applied_match_info_id: Optional[str] = None
+        self._match_info: str | None = None
+        self._applied_match_info_id: str | None = None
 
     async def run(
         self,
