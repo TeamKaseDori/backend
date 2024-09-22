@@ -91,11 +91,7 @@ class MatchService:
         self._user_data: str | None = None
         self._applied_user_data_id: str | None = None
 
-    async def run(
-        self,
-        on_success: Callable[[str], Awaitable[None]],
-        on_abort: Callable[[], Awaitable[None]],
-    ) -> str | None:
+    async def run(self) -> str | None:
         print("enter matchservice.run")
         await self.websocket.accept()
         while True:
@@ -103,7 +99,6 @@ class MatchService:
 
             if self._aborted:
                 self._abort()
-                await on_abort()
                 return None
 
             self._apply_user_data()
@@ -111,14 +106,12 @@ class MatchService:
             # listen match
             if self._match_success_by_the_other:
                 self._success()
-                await on_success(self.pair_user_id)
                 return self.pair_user_id
 
             # search match
             match_success: bool = self._find_match()
             if match_success:
                 self._success()
-                on_success(self.pair_user_id)
                 return self.pair_user_id
 
     def _apply_user_data(self) -> None:
