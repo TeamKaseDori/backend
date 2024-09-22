@@ -1,48 +1,40 @@
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, Any
+from typing import Annotated
 
-import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt.exceptions import InvalidTokenError
-from pydantic import BaseModel
+
+from app.auth.jwt import Claimes, new_token, verify_token
 
 router = APIRouter()
 security = HTTPBearer()
 
-SECRET_KEY = "secret"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 8
 
-USER_ID = "user_id"
-
-
-class TokenData(BaseModel):
-    user_id: str
-
-
-def get_user_info(
+def get_user_id(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-) -> TokenData:
-    token = credentials.credentials
+) -> str:
+    token: str = credentials.credentials
     try:
-        claimes = jwt.decode(
-            token, SECRET_KEY, algorithms=ALGORITHM, requires=["exp", USER_ID]
+        claimes: Claimes = verify_token(token)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="トークンが不正です"
         )
-    except InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    token_data = TokenData(user_id=claimes[USER_ID])
-    return token_data
+    return claimes.user_id
+
+
+def get_user_id_from_query(token: Annotated[str, Query()]) -> str:
+    try:
+        claimes: Claimes = verify_token(token)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="トークンが不正です"
+        )
+    return claimes.user_id
 
 
 @router.get("/register")
 def register() -> dict:
-    expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     user_id: str = str(uuid.uuid4())
-    claimes: dict[str, Any] = {
-        "exp": expire,
-        USER_ID: user_id,
-    }
-    token = jwt.encode(claimes, SECRET_KEY, algorithm=ALGORITHM)
+    token: str = new_token(user_id)
     return {"token": token}
