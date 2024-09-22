@@ -59,7 +59,7 @@ class DataGateway:
     ) -> None:
         while True:
             print("in DataGateway")
-            data: dict = await self._websocket.recieve_json()
+            data: dict = await self._websocket.receive_json()
             if self._does_abort(data):
                 notify_abort()
                 break
@@ -88,12 +88,11 @@ class MatchService:
         self._match_success_by_the_other: bool = False
         self.pair_user_id: str | None = None
 
-        self._user_data: str | None = None
+        self._user_data: dict | None = None
         self._applied_user_data_id: str | None = None
 
     async def run(self) -> str | None:
         print("enter matchservice.run")
-        await self.websocket.accept()
         while True:
             await asyncio.sleep(0.5)
 
