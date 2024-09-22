@@ -1,10 +1,10 @@
 import asyncio
 import random
-import uuid
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import WebSocket, status
+from pydantic import BaseModel, Field
 
 from app.redis_instance import find_match, matched_pair
 
@@ -75,8 +75,6 @@ class DataGateway:
 
 # マッチングをする
 class MatchService:
-    _user_data_id: str = "user_data_id"
-
     def __init__(
         self, user_id: str, match_radius_m_min: float, match_radius_m_max: float
     ) -> None:
@@ -88,8 +86,7 @@ class MatchService:
         self._match_success_by_the_other: bool = False
         self.pair_user_id: str | None = None
 
-        self._user_data: dict | None = None
-        self._applied_user_data_id: str | None = None
+        self._user_data: UserData | None = None
 
     async def run(self) -> str | None:
         print("enter matchservice.run")
@@ -116,16 +113,15 @@ class MatchService:
     def _apply_user_data(self) -> None:
         if self._user_data is None:
             return
-        if self._user_data[self._user_data_id] == self._applied_user_data_id:
+        if self._user_data._is_applied:
             return
 
         # 座標redisに送る
         find_match.add(
-            self.user_id, self._user_data["longitude"], self._user_data["latitude"]
+            self.user_id, self._user_data.longitude, self._user_data.latitude
         )
+        self._user_data._is_applied = True
         print(f"send data: {self._user_data}")
-
-        self._applied_user_data_id = self._user_data[self._user_data_id]  # type: ignore
 
     def _find_match(self) -> bool:
         # find pair user
@@ -164,9 +160,8 @@ class MatchService:
         matched_pair.delete(self.user_id)
         print("abort from match service")
 
-    def listen_user_data(self, data: dict) -> None:
+    def listen_user_data(self, data: "UserData") -> None:
         self._user_data = data
-        self._user_data[self._user_data_id] = uuid.uuid4()
         print(f"notified: {data}")
 
     def listen_match_success_by_the_other(self, other_user_id: str) -> None:
@@ -175,3 +170,9 @@ class MatchService:
 
     def listen_abort(self) -> None:
         self._aborted = True
+
+
+class UserData(BaseModel):
+    _is_applied: bool = Field(default=False)
+    latitude: float  # 緯度
+    longitude: float  # 経度
