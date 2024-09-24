@@ -43,11 +43,11 @@ class MatchedPairRepo:
         self.r.set(user_id2, user_id1, ex=self.ex)
 
     def get(self, user_id: str) -> str | None:
-        pair: str | None = self.r.get(user_id)
+        pair: str | None = self.r.get(user_id)  # pyright: ignore[reportAssignmentType]
         return pair
 
     def delete(self, user_id: str) -> None:
-        pair: str | None = self.r.get(user_id)
+        pair: str | None = self.r.get(user_id)  # pyright: ignore[reportAssignmentType]
         if pair is None:
             return
         self.r.delete(user_id)
@@ -63,7 +63,7 @@ class FindMatchRepo:
         self.pub_sub = redis.pubsub()
 
     def _perform_lock(self, user_id: str) -> bool:
-        return self.r.set(user_id, 1, nx=True, ex=self.EX_LOCK)
+        return self.r.set(user_id, 1, nx=True, ex=self.EX_LOCK)  # pyright: ignore[reportReturnType]
 
     def _perform_lock_2(self, user_id1: str, user_id2: str) -> bool:
         can_update1: bool = self._perform_lock(user_id1)
@@ -119,7 +119,7 @@ class FindMatchRepo:
             )
         except ResponseError:
             return []
-        candidates = list(set(max_range) - set(min_range))
+        candidates = list(set(max_range) - set(min_range))  # pyright: ignore[reportArgumentType]
         return candidates
 
     def publish(self, pair_user_id: str, user_id: str):
@@ -139,7 +139,7 @@ class PlayDataRepo:
         self.r.set(key, value, ex=timedelta(minutes=1))
 
     def get(self, user_id: str) -> tuple[float, float, bool]:
-        value: str | None = self.r.get(user_id)
+        value: str | None = self.r.get(user_id)  # pyright: ignore[reportAssignmentType]
         if not value:
             return (0, 0, False)
         values: list[str] = value.split(self.D)
