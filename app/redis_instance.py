@@ -1,25 +1,38 @@
 from datetime import timedelta
-from typing import Any
 
 from redis import Redis
+from redis.connection import ConnectionPool
 from redis.exceptions import ResponseError
 
 from .load_env import REDIS_HOST
 
-matched_pair_redis: Redis = Redis(
+_matched_pair_redis_pool: ConnectionPool = ConnectionPool(
     host=REDIS_HOST, port=6379, db=0, decode_responses=True
 )
-
-finding_match_redis: Redis = Redis(
+_find_match_redis_pool: ConnectionPool = ConnectionPool(
     host=REDIS_HOST, port=6379, db=1, decode_responses=True, protocol=3
 )
-
-playing_data_redis: Redis = Redis(
+_play_data_redis_pool: ConnectionPool = ConnectionPool(
     host=REDIS_HOST, port=6379, db=2, decode_responses=True
 )
 
 
-class MatchedPair:
+def get_matched_pair_repo() -> "MatchedPairRepo":
+    r = Redis.from_pool(_matched_pair_redis_pool)
+    return MatchedPairRepo(r)
+
+
+def get_find_match_repo() -> "FindMatchRepo":
+    r = Redis.from_pool(_find_match_redis_pool)
+    return FindMatchRepo(r)
+
+
+def get_play_data_repo() -> "PlayDataRepo":
+    r = Redis.from_pool(_play_data_redis_pool)
+    return PlayDataRepo(r)
+
+
+class MatchedPairRepo:
     ex: timedelta = timedelta(hours=6)
 
     def __init__(self, redis: Redis) -> None:
@@ -30,18 +43,18 @@ class MatchedPair:
         self.r.set(user_id2, user_id1, ex=self.ex)
 
     def get(self, user_id: str) -> str | None:
-        pair: str | None = self.r.get(user_id)
+        pair: str | None = self.r.get(user_id)  # pyright: ignore[reportAssignmentType]
         return pair
 
     def delete(self, user_id: str) -> None:
-        pair: str | None = self.r.get(user_id)
+        pair: str | None = self.r.get(user_id)  # pyright: ignore[reportAssignmentType]
         if pair is None:
             return
         self.r.delete(user_id)
         self.r.delete(pair)
 
 
-class FindMatch:
+class FindMatchRepo:
     KEY: str = "user_coordinate"
     EX_LOCK: timedelta = timedelta(seconds=10)
 
@@ -50,7 +63,7 @@ class FindMatch:
         self.pub_sub = redis.pubsub()
 
     def _perform_lock(self, user_id: str) -> bool:
-        return self.r.set(user_id, 1, nx=True, ex=self.EX_LOCK)
+        return self.r.set(user_id, 1, nx=True, ex=self.EX_LOCK)  # pyright: ignore[reportReturnType]
 
     def _perform_lock_2(self, user_id1: str, user_id2: str) -> bool:
         can_update1: bool = self._perform_lock(user_id1)
@@ -106,14 +119,14 @@ class FindMatch:
             )
         except ResponseError:
             return []
-        candidates = list(set(max_range) - set(min_range))
+        candidates = list(set(max_range) - set(min_range))  # pyright: ignore[reportArgumentType]
         return candidates
 
     def publish(self, pair_user_id: str, user_id: str):
         self.r.publish(pair_user_id, user_id)
 
 
-class PlayingData:
+class PlayDataRepo:
     # divider
     D: str = ","
 
@@ -125,16 +138,11 @@ class PlayingData:
         value = f"{longitude}{self.D}{latitude}"
         self.r.set(key, value, ex=timedelta(minutes=1))
 
-    def get(self, user_id: str) -> (float, float, bool):
-        value: str | None = self.r.get(user_id)
+    def get(self, user_id: str) -> tuple[float, float, bool]:
+        value: str | None = self.r.get(user_id)  # pyright: ignore[reportAssignmentType]
         if not value:
             return (0, 0, False)
         values: list[str] = value.split(self.D)
         longitude: float = float(values[0])
         latitude: float = float(values[1])
         return (longitude, latitude, True)
-
-
-matched_pair: MatchedPair = MatchedPair(matched_pair_redis)
-find_match: FindMatch = FindMatch(finding_match_redis)
-playing_data: PlayingData = PlayingData(playing_data_redis)
