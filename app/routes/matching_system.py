@@ -54,7 +54,7 @@ class MatchSuccessNotifier:
                     return
         # 子スレッドの例外は親スレッドへ伝達されない
         # そのため、ここが最上位
-        except:
+        except:  # noqa: E722
             on_exception()
         finally:
             on_close()
@@ -122,7 +122,8 @@ class DataGateway:
                 await self._websocket.close(status.WS_1011_INTERNAL_ERROR)
             await self._websocket.close(status.WS_1000_NORMAL_CLOSURE)
 
-        except:  # WebSocketDisconnect など
+        # WebSocketDisconnect など
+        except:  # noqa: E722
             print("!!!!!!!!!!!!!exception in DataGateway")
             for f in self._aobrt_listeners:
                 f()
@@ -210,7 +211,7 @@ class MatchService:
                 match_success: bool = self._find_match()
                 if match_success:
                     self._success()
-        except:
+        except:  # noqa: E722
             self._abort()
 
     def _apply_user_data(self) -> None:
