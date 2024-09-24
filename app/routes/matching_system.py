@@ -8,7 +8,7 @@ import redis.client
 from fastapi import WebSocket, status
 from pydantic import BaseModel
 
-from app.redis_instance import FindMatch, MatchedPair
+from app.redis_instance import FindMatchRepo, MatchedPairRepo
 
 # 1. listen matche
 # 2. start DataGateway.run()
@@ -151,8 +151,8 @@ class MatchService:
         match_radius_m_max: float,
         data_gateway: DataGateway,
         match_success_notifier: MatchSuccessNotifier,
-        find_match_db: FindMatch,
-        matched_pair_db: MatchedPair,
+        find_match_repo: FindMatchRepo,
+        matched_pair_repo: MatchedPairRepo,
     ) -> None:
         self.user_id: str = user_id
         self._match_radius_m_min: float = match_radius_m_min
@@ -165,8 +165,8 @@ class MatchService:
 
         self._data_gateway: DataGateway = data_gateway
         self._match_success_notifier: MatchSuccessNotifier = match_success_notifier
-        self._find_match_db: FindMatch = find_match_db
-        self._matched_pair_db: MatchedPair = matched_pair_db
+        self._find_match_repo: FindMatchRepo = find_match_repo
+        self._matched_pair_repo: MatchedPairRepo = matched_pair_repo
 
     async def run(self) -> None:
         self._data_gateway.add_abort_listener(self.listen_abort)
@@ -221,7 +221,7 @@ class MatchService:
             return
 
         # 座標redisに送る
-        self._find_match_db.add(
+        self._find_match_repo.add(
             self.user_id, self._user_data.longitude, self._user_data.latitude
         )
         self._user_data._is_applied = True
@@ -232,7 +232,7 @@ class MatchService:
         if self._user_data is None:
             return False
 
-        candidates = self._find_match_db.find(
+        candidates = self._find_match_repo.find(
             self.user_id, self._match_radius_m_min, self._match_radius_m_max
         )
         if not candidates:
@@ -241,16 +241,16 @@ class MatchService:
         random_index: int = random.randint(0, len(candidates) - 1)
         pair_candidate_id: str = candidates[random_index]
 
-        ok = self._find_match_db.pop(self.user_id, pair_candidate_id)
+        ok = self._find_match_repo.pop(self.user_id, pair_candidate_id)
         if not ok:
             return False
         pair_user_id = pair_candidate_id
 
         # redis pub/sub で相手に伝える
-        self._find_match_db.publish(pair_user_id, self.user_id)
+        self._find_match_repo.publish(pair_user_id, self.user_id)
 
         # マッチredis へ登録
-        self._matched_pair_db.add(self.user_id, pair_user_id)
+        self._matched_pair_repo.add(self.user_id, pair_user_id)
 
         return True
 
@@ -262,9 +262,9 @@ class MatchService:
 
     def _abort(self) -> None:
         # 緯度経度dbから削除
-        self._find_match_db.danger_delete(self.user_id)
+        self._find_match_repo.danger_delete(self.user_id)
         # マッチdbから削除
-        self._matched_pair_db.delete(self.user_id)
+        self._matched_pair_repo.delete(self.user_id)
         print("abort from match service")
 
     def listen_user_data_update(self, data: "UserData") -> None:
