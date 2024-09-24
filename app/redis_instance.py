@@ -34,7 +34,9 @@ class MatchedPair:
         return pair
 
     def delete(self, user_id: str) -> None:
-        pair: str = self.r.get(user_id)
+        pair: str | None = self.r.get(user_id)
+        if pair is None:
+            return
         self.r.delete(user_id)
         self.r.delete(pair)
 
