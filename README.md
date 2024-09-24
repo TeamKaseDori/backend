@@ -19,8 +19,6 @@ or
 
 ### レスポンス
 
-Bearer認証
-
 ```json
 { "token": token }
 ```
@@ -29,17 +27,16 @@ Bearer認証
 
 ### リクエスト
 
-ヘッダー：Bearer token `Authorization: Bearer <Token>`
-
-クエリー：`/matching?min=400&max=1000` のように `min` と `max` でマッチング範囲を変更できます
+クエリー（必須）: `/matching?token=<TOKEN>`
+クエリー（オプション）: `/matching?min=400&max=1000` のように `min` と `max` でマッチング範囲を変更できます
 
 ### WebSocket
 
 ```json
-{ "abort": 1 or 0, "longitude": float, "latitude": float }
+{ "abort": boolean, "longitude": float, "latitude": float }
 ```
 
-↑のデータを数秒おき（適当でいい）に送ってください `abort` はマッチングの中止です（ `1` が中止） 
+↑のデータを数秒おき（適当でいい）に送ってください `abort` はマッチングの中止です（ `true` が中止） 
 
 マッチングが完了したら
 
@@ -53,9 +50,9 @@ Bearer認証
 
 ### リクエスト
 
-ヘッダー：Bearer token `Authorization: Bearer <Token>`
+クエリー（必須）: `/matching?token=<TOKEN>`
 
-### WebSocket
+### レスポンス
 
 自分の経度緯度
 
