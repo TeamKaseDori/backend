@@ -45,7 +45,7 @@ class FindMatch:
 
     def __init__(self, redis: Redis) -> None:
         self.r = redis
-        self.p = redis.pubsub()
+        self.pub_sub = redis.pubsub()
 
     def _perform_lock(self, user_id: str) -> bool:
         return self.r.set(user_id, 1, nx=True, ex=self.EX_LOCK)
@@ -107,17 +107,8 @@ class FindMatch:
         candidates = list(set(max_range) - set(min_range))
         return candidates
 
-    def publish(self, pair_user_id: str):
-        self.r.publish(pair_user_id, "invite")
-
-    def subscribe(self, user_id: str):
-        self.p.subscribe(user_id)
-
-    def unsubscribe(self, user_id: str):
-        self.p.unsubscribe(user_id)
-
-    def get_message(self) -> dict[str, Any] | None:
-        return self.p.get_message(ignore_subscribe_messages=True)
+    def publish(self, pair_user_id: str, user_id: str):
+        self.r.publish(pair_user_id, user_id)
 
 
 class PlayingData:
